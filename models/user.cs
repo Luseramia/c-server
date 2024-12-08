@@ -46,7 +46,8 @@ class User
 
                         return Results.Ok(user); // Return the first result
                     }
-                    else{
+                    else
+                    {
                         return Results.NotFound();
                     }
                 }
@@ -54,6 +55,24 @@ class User
             }
         }
         return Results.NotFound(); // In case no user is found
+    }
+    public static IResult CheckLogin(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    {
+        return Results.Ok();
+        // var token = context.Request.Cookies["jwtToken"];
+        // JwtDecoder.DecodeJwtToken(token);
+        // if (token != null)
+        // {
+        //     Console.WriteLine("1");
+        //     return Results.Ok();
+        // }
+        // else
+        // {
+        //     Console.WriteLine("2");
+        //     return Results.Unauthorized();
+
+        // }
+
     }
 
 }

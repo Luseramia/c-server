@@ -1,27 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Luminas\\Desktop\\test1\\test1.csproj": {}
+    "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Luminas\\Desktop\\test1\\test1.csproj": {
+    "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Luminas\\Desktop\\test1\\test1.csproj",
+        "projectUniqueName": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj",
         "projectName": "test1",
-        "projectPath": "C:\\Users\\Luminas\\Desktop\\test1\\test1.csproj",
+        "projectPath": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj",
         "packagesPath": "C:\\Users\\Luminas\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Luminas\\Desktop\\test1\\obj\\",
+        "outputPath": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Luminas\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Luminas\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -38,8 +36,9 @@
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
-          "auditMode": "direct"
-        }
+          "auditMode": "all"
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -56,6 +55,10 @@
             "Microsoft.IdentityModel.Protocols.OpenIdConnect": {
               "target": "Package",
               "version": "[8.0.2, )"
+            },
+            "MongoDB.Driver": {
+              "target": "Package",
+              "version": "[3.1.0, )"
             },
             "MySql.Data": {
               "target": "Package",
@@ -81,7 +84,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.300/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,11 +1,20 @@
 {
   "Version": 1,
-  "Hash": "j38hR44tzbf+oFUGtR5P+ZPH1vXvfW1OHO53ri93dvM=",
+  "Hash": "3HK5ebsq+lRX0+vmYDGr8+QDA9mUl30p53AREQUAuvY=",
   "Source": "test1",
   "BasePath": "_content/test1",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
+  "DiscoveryPatterns": [
+    {
+      "Name": "test1\\wwwroot",
+      "Source": "test1",
+      "ContentRoot": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\wwwroot\\",
+      "BasePath": "_content/test1",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [],
+  "Endpoints": []
 }
