@@ -6,7 +6,8 @@ using System.Security.Cryptography;
 using MongoDBService;
 using System.Text;
 using models.ManageFile;
-
+using System.Data;
+using AESEnCAndDeC;
 namespace models.Product;
 public class Product
 {
@@ -58,4 +59,114 @@ public class Product
             return Results.StatusCode(500); // หยุดการทำงานของฟังก์ชัน
         }
     }
+    public static async Task<IResult> FindProduct(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    {
+        dynamic data = body;
+        var productId = data.productId;
+        try
+        {
+            string sql = "SELECT * FROM product WHERE product_id = @product_id";
+            using (MySqlCommand command = new MySqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@product_id", productId);
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        var product = new
+                        {
+                            productName = reader.GetString("username"),
+                            productDescription = reader.GetString("address"),
+                            productPrice = reader.GetInt32("address")
+
+                        };
+                        byte[] image = await ManageFile.ManageFile.FindImageFromDataBase(body, connection, context);
+                        ProductData dataToSend = new ProductData
+                        {
+                            productName = product.productName,
+                            productDescription = product.productDescription,
+                            productPrice = product.productPrice,
+                            image = image
+
+                        };
+                        return Results.Ok(image); // Return the first result
+                    }
+                    else
+                    {
+                        return Results.NotFound();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // หากเกิดข้อผิดพลาดใน SQL
+            // ลบไฟล์ออกจาก File System เพื่อป้องกันไฟล์ตกค้าง
+            // _fileService.DeleteImageFromFileSystem(fileName, _uploadPath);
+            Console.WriteLine($"Error saving data to database product: {ex.Message}");
+            // context.Response.StatusCode = 500; // ส่งสถานะ 500 กลับไป
+            // context.Response.WriteAsync($"Error saving data to database: {ex.Message}");
+            return Results.StatusCode(500); // หยุดการทำงานของฟังก์ชัน
+        }
+    }
+
+
+    public static async Task<IResult> GetProduct(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    {
+        dynamic data = body;
+        try
+        {
+            string sql = "SELECT * FROM product INNER JOIN images ON product.img_id = images.img_id";
+            using (MySqlCommand command = new MySqlCommand(sql, connection))
+            {
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    var products = new List<object>();
+                    while (reader.Read())
+                    {
+                        var product = new
+                        {
+                            productId = reader.GetString("product_id"),
+                            productName = reader.GetString("product_name"),
+                            productDescription = reader.GetString("product_description"),
+                            productPrice = reader.GetInt32("product_price"),
+                            productImage = GetBlobData(reader, "file_data"),
+                        };
+                        products.Add(product);
+                    }
+                    return Results.Ok(products);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // หากเกิดข้อผิดพลาดใน SQL
+            // ลบไฟล์ออกจาก File System เพื่อป้องกันไฟล์ตกค้าง
+            // _fileService.DeleteImageFromFileSystem(fileName, _uploadPath);
+            Console.WriteLine($"Error saving data to database product: {ex.Message}");
+            // context.Response.StatusCode = 500; // ส่งสถานะ 500 กลับไป
+            // context.Response.WriteAsync($"Error saving data to database: {ex.Message}");
+            return Results.StatusCode(500); // หยุดการทำงานของฟังก์ชัน
+        }
+    }
+
+    private static byte[] GetBlobData(MySqlDataReader reader, string columnName)
+    {
+        byte[] myKey = Encoding.UTF8.GetBytes("my_secret_key_123gbasdfe1avdfdse");  // Key ความยาว 16, 24 หรือ 32 bytes ตามที่กำหนด
+        byte[] myIV = Encoding.UTF8.GetBytes("my_initializatio");  // IV ความยาว 16 bytes
+        // ตรวจสอบขนาดข้อมูลในคอลัมน์
+        long length = reader.GetBytes(reader.GetOrdinal(columnName), 0, null, 0, 0);
+        byte[] buffer = new byte[length];
+        // อ่านข้อมูล binary จากคอลัมน์
+        reader.GetBytes(reader.GetOrdinal(columnName), 0, buffer, 0, (int)length);
+        using (Aes myAes = Aes.Create())
+        {
+            byte[] decrypted = AESDecryption.DecryptStringFromBytes_Aes(buffer, myKey, myIV);
+            // await MongoDBConnection.InsertData(imgId, encrypted);
+            buffer = decrypted;
+        }
+        return buffer;
+    }
+
+    
 }

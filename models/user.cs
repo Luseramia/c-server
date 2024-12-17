@@ -10,7 +10,7 @@ using MySqlX.XDevAPI.Common;
 
 class User
 {
-    public static IResult Login(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    public static async Task<IResult> Login(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
 
         dynamic data = body;
@@ -18,7 +18,7 @@ class User
         string username = data.username.ToString();
         string password = data.password.ToString();
         // string id = body["id"];
-        string sql = "SELECT * FROM member WHERE username = @username AND password = @password";
+        string sql = "SELECT * FROM user WHERE username = @username AND password = @password";
         using (MySqlCommand command = new MySqlCommand(sql, connection))
         {
             command.Parameters.AddWithValue("@username", username);
@@ -41,7 +41,8 @@ class User
                         var user = new
                         {
                             username = reader.GetString("username"),
-                            address = reader.GetString("address")
+                            name = reader.GetString("name"),
+                            address = reader.GetInt64("grant")
                         };
 
                         return Results.Ok(user); // Return the first result
@@ -56,7 +57,7 @@ class User
         }
         return Results.NotFound(); // In case no user is found
     }
-    public static IResult CheckLogin(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    public static async Task<IResult> CheckLogin(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
         return Results.Ok();
         // var token = context.Request.Cookies["jwtToken"];

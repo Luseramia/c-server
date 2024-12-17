@@ -22,10 +22,10 @@ public static class RouteConfig
         };
         var noAuthRoute = new Dictionary<string, Func<ExpandoObject, MySqlConnection, HttpContext, Task<IResult>>>
         {
-            // { "/post1", User.Login },
-            {"/insert-product",Product.InsertProduct}
-            //  { "/checkLogin", User.CheckLogin },
-            //  {"/saveImages",ManageFile.SaveImageMetadataToDatabase}
+            { "/login", User.Login },
+            {"/insert-product",Product.InsertProduct},
+             { "/checkLogin", User.CheckLogin },
+             {"/getProducts",Product.GetProduct}
             // Add more routes here
         };
         string connectionString = "Server=192.168.1.53;Database=shoping;User ID=root;Password=FROMIS_9;";

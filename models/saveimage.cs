@@ -9,6 +9,9 @@ using MongoDBService;
 using MongoDB.Bson;
 using System.Text;
 using System.IO.Compression;
+using System.Data;
+using AESEnCAndDeC;
+
 
 namespace models.ManageFile;
 public class ManageFile
@@ -23,7 +26,7 @@ public class ManageFile
         var fileContent = Convert.FromBase64String(fileData.content);
         string fileBytes = System.Text.Encoding.UTF8.GetString(fileContent);
         // Console.WriteLine($" file = {fileContent.ToString()}");
-        byte[] imageBytes;
+        byte[] imageBytes = [];
         byte[] randomBytes = new byte[25];
         RandomNumberGenerator.Fill(randomBytes);
         DateTime currentDateTime = DateTime.Now;
@@ -36,8 +39,8 @@ public class ManageFile
         // บันทึกไฟล์ลงใน File System
         using (Aes myAes = Aes.Create())
         {
-            byte[] encrypted = EncryptStringToBytes_Aes(fileContent, myKey, myIV);
-            await MongoDBConnection.InsertData(imgId, encrypted);
+            byte[] encrypted = AESEncryption.EncryptStringToBytes_Aes(fileContent, myKey, myIV);
+            // await MongoDBConnection.InsertData(imgId, encrypted);
             imageBytes = encrypted;
         }
 
@@ -51,12 +54,12 @@ public class ManageFile
 
 
         // หากบันทึกไฟล์สำเร็จ บันทึก Metadata ในฐานข้อมูล
-        string sql = "INSERT INTO Images (img_id,FileName, FileData, UploadedAt) VALUES (@img_id,@FileName, @FileData,@UploadedAt)";
+        string sql = "INSERT INTO images (img_id,file_name, file_data, UploadedAt) VALUES (@img_id,@file_name, @file_data,@UploadedAt)";
         using (MySqlCommand command = new MySqlCommand(sql, connection))
         {
             command.Parameters.AddWithValue("@img_id", imgId);
-            command.Parameters.AddWithValue("@FileName", fileName);
-            command.Parameters.AddWithValue("@FileData", imageBytes);
+            command.Parameters.AddWithValue("@file_name", fileName);
+            command.Parameters.AddWithValue("@file_data", imageBytes);
             command.Parameters.AddWithValue("@UploadedAt", currentDateTime);
             command.ExecuteNonQuery();
         }
@@ -71,33 +74,69 @@ public class ManageFile
     }
 
 
-    public static async Task<IResult> FindImageFromDataBase(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    public static async Task<byte[]> FindImageFromDataBase(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
         dynamic data = body;
-        var img_id = data.img_id;
-        byte[] dataToreturn = [];
+        var imgId = data.img_id;
+        byte[] imageData = [];
         byte[] myKey = Encoding.UTF8.GetBytes("my_secret_key_123gbasdfe1avdfdse");  // Key ความยาว 16, 24 หรือ 32 bytes ตามที่กำหนด
         byte[] myIV = Encoding.UTF8.GetBytes("my_initializatio");  // IV ความยาว 16 bytes
+
+        string sql = "SELECT * FROM images WHERE img_id = @img_id";
         try
         {
-
-            using (Aes myAes = Aes.Create())
+            using (MySqlCommand command = new MySqlCommand(sql, connection))
             {
-                List<BsonDocument> ressult = await MongoDBConnection.FindData(img_id);
-                foreach (var documents in ressult)
+                command.Parameters.AddWithValue("@img_id", imgId);
+                using (MySqlDataReader reader = command.ExecuteReader())
                 {
-                    byte[] dataFromDB = documents["data"].AsByteArray;
-                    byte[] roundtrip = DecryptStringFromBytes_Aes(dataFromDB, myKey, myIV);
-                    dataToreturn = roundtrip;
+                    if (reader.Read())
+                    {
+                        var image = new
+                        {
+                            fileName = reader.GetString("file_name"),
+                            fileData = GetBlobData(reader, "file_data"),
+                        };
+                        using (Aes myAes = Aes.Create())
+                        {
+                            byte[] decrypted = AESDecryption.DecryptStringFromBytes_Aes(image.fileData, myKey, myIV);
+                            // await MongoDBConnection.InsertData(imgId, encrypted);
+                            imageData = decrypted;
+                        }
+             
+                        return imageData; // Return the first result
+                    }
+                    else
+                    {
+                        return imageData;
+                    }
                 }
-                return Results.File(dataToreturn, "image/jpeg");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
-            return Results.StatusCode(500);
+            return imageData;
         }
+        // try
+        // {
+
+        //     using (Aes myAes = Aes.Create())
+        //     {
+        //         List<BsonDocument> ressult = await MongoDBConnection.FindData(img_id);
+        //         foreach (var documents in ressult)
+        //         {
+        //             byte[] dataFromDB = documents["data"].AsByteArray;
+        //             byte[] roundtrip = DecryptStringFromBytes_Aes(dataFromDB, myKey, myIV);
+        //             dataToreturn = roundtrip;
+        //         }
+        //         return dataToreturn;
+        //     }
+        // }
+        // catch (Exception ex)
+        // {
+        //     Console.WriteLine(ex.Message);
+        //     return dataToreturn;
+        // }
     }
 
 
@@ -114,7 +153,7 @@ public class ManageFile
                 command.Parameters.AddWithValue("@img_id", img_id);
                 command.ExecuteNonQuery();
             }
-            await MongoDBConnection.DeleteData(img_id);
+            // await MongoDBConnection.DeleteData(img_id);
             return Results.Ok(data);
             // _fileService.DeleteImageFromFileSystem(img_id, _uploadPath);
         }
@@ -127,84 +166,16 @@ public class ManageFile
     }
 
 
-
-    private static byte[] EncryptStringToBytes_Aes(byte[] plainText, byte[] Key, byte[] IV)
+    private static byte[] GetBlobData(MySqlDataReader reader, string columnName)
     {
-        // Check arguments.
-        if (plainText == null || plainText.Length <= 0)
-            throw new ArgumentNullException("plainText");
-        if (Key == null || Key.Length <= 0)
-            throw new ArgumentNullException("Key");
-        if (IV == null || IV.Length <= 0)
-            throw new ArgumentNullException("IV");
-
-        byte[] encrypted;
-
-        // Create an Aes object with the specified key and IV
-        using (Aes aesAlg = Aes.Create())
-        {
-            aesAlg.Key = Key;
-            aesAlg.IV = IV;
-            aesAlg.Padding = PaddingMode.PKCS7;  // Set padding mode for AES
-
-            // Create an encryptor to perform the stream transform
-            ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-
-            // Create the streams used for encryption
-            using (MemoryStream msEncrypt = new MemoryStream())
-            {
-                using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                {
-                    // Write all data to the stream
-                    csEncrypt.Write(plainText, 0, plainText.Length);
-                }
-
-                encrypted = msEncrypt.ToArray();  // Get the encrypted data
-            }
-        }
-
-        // Return the encrypted bytes from the memory stream
-        return encrypted;
+        // ตรวจสอบขนาดข้อมูลในคอลัมน์
+        long length = reader.GetBytes(reader.GetOrdinal(columnName), 0, null, 0, 0);
+        byte[] buffer = new byte[length];
+        // อ่านข้อมูล binary จากคอลัมน์
+        reader.GetBytes(reader.GetOrdinal(columnName), 0, buffer, 0, (int)length);
+        return buffer;
     }
 
-
-    private static byte[] DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
-    {
-        // Check arguments.
-        if (cipherText == null || cipherText.Length <= 0)
-            throw new ArgumentNullException("cipherText");
-        if (Key == null || Key.Length <= 0)
-            throw new ArgumentNullException("Key");
-        if (IV == null || IV.Length <= 0)
-            throw new ArgumentNullException("IV");
-
-        byte[] plaintext;
-
-        // Create an Aes object with the specified key and IV
-        using (Aes aesAlg = Aes.Create())
-        {
-            aesAlg.Key = Key;
-            aesAlg.IV = IV;
-            aesAlg.Padding = PaddingMode.PKCS7;  // Set padding mode for AES
-
-            // Create a decryptor to perform the stream transform
-            ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-            // Create the streams used for decryption
-            using (MemoryStream msDecrypt = new MemoryStream(cipherText))
-            {
-                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                {
-                    // Use MemoryStream to hold the decrypted data
-                    using (var msOutput = new MemoryStream())
-                    {
-                        csDecrypt.CopyTo(msOutput);  // Copy decrypted data to MemoryStream
-                        plaintext = msOutput.ToArray();  // Return the decrypted byte array
-                    }
-                }
-            }
-        }
-
-        return plaintext;  // Return the decrypted data
-    }
 }
+
+
