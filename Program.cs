@@ -45,6 +45,11 @@ builder.Services.AddAuthentication(option =>
 });
 
 builder.Services.AddAuthorization();
+// builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+// var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+// builder.Services.AddSingleton<DatabaseService>();
 
 var app = builder.Build();
 app.ConfigureRoutes();

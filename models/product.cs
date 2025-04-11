@@ -75,21 +75,32 @@ public class Product
                     {
                         var product = new
                         {
-                            productName = reader.GetString("username"),
-                            productDescription = reader.GetString("address"),
-                            productPrice = reader.GetInt32("address")
-
+                            productId = reader.GetString("product_id"),
+                            productName = reader.GetString("product_name"),
+                            productDescription = reader.GetString("product_description"),
+                            productPrice = reader.GetInt32("product_price"),
+                            imgId = reader.GetString("img_id")
                         };
-                        byte[] image = await ManageFile.ManageFile.FindImageFromDataBase(body, connection, context);
+                        // var bodyDict = body as IDictionary<string, object>;
+                        //  if (bodyDict != null)
+                        //      {
+                        //         bodyDict["img_id"] = product.imgId;
+                        //       }
+                    //    byte[] image;
+                        // using (var newConnection = new MySqlConnection(connection.ConnectionString))
+                        // {
+                        //     await newConnection.OpenAsync();
+                        //     image = await ManageFile.ManageFile.FindImageFromDataBase(body, newConnection, context);
+                        // }
                         ProductData dataToSend = new ProductData
                         {
+                            productId = product.productId,
                             productName = product.productName,
                             productDescription = product.productDescription,
                             productPrice = product.productPrice,
-                            image = image
-
+                            imgId = product.imgId,
                         };
-                        return Results.Ok(image); // Return the first result
+                        return Results.Ok(dataToSend); // Return the first result
                     }
                     else
                     {

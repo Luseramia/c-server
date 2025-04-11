@@ -6,6 +6,7 @@ using models.User;
 using models.ManageFile;
 using MySql.Data.MySqlClient;
 using models.Product;
+using Microsoft.Extensions.Configuration;
 
 namespace Routes;
 
@@ -25,9 +26,19 @@ public static class RouteConfig
             { "/login", User.Login },
             {"/insert-product",Product.InsertProduct},
              { "/checkLogin", User.CheckLogin },
-             {"/getProducts",Product.GetProduct}
+             {"/getProducts",Product.GetProduct},
+            {"/findProduct",Product.FindProduct},
+            {"/findImage",ManageFile.FindImageFromDataBase},
             // Add more routes here
         };
+
+// private readonly string _connectionString;
+
+    // ใช้ IConfiguration เพื่อโหลดค่า ConnectionString
+    // public DatabaseService(IConfiguration configuration)
+    // {
+    //    _connectionString = configuration.GetConnectionString("DefaultConnection");
+    // }
         string connectionString = "Server=192.168.1.53;Database=shoping;User ID=root;Password=FROMIS_9;";
         foreach (var route in Authroutes)
         {

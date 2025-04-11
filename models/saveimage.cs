@@ -74,14 +74,14 @@ public class ManageFile
     }
 
 
-    public static async Task<byte[]> FindImageFromDataBase(ExpandoObject body, MySqlConnection connection, HttpContext context)
+    public static async Task<IResult> FindImageFromDataBase(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
         dynamic data = body;
-        var imgId = data.img_id;
+        Console.WriteLine(data.imgId);
+        var imgId = data.imgId;
         byte[] imageData = [];
         byte[] myKey = Encoding.UTF8.GetBytes("my_secret_key_123gbasdfe1avdfdse");  // Key ความยาว 16, 24 หรือ 32 bytes ตามที่กำหนด
         byte[] myIV = Encoding.UTF8.GetBytes("my_initializatio");  // IV ความยาว 16 bytes
-
         string sql = "SELECT * FROM images WHERE img_id = @img_id";
         try
         {
@@ -97,25 +97,29 @@ public class ManageFile
                             fileName = reader.GetString("file_name"),
                             fileData = GetBlobData(reader, "file_data"),
                         };
+                        Console.WriteLine(image.fileName);
                         using (Aes myAes = Aes.Create())
                         {
                             byte[] decrypted = AESDecryption.DecryptStringFromBytes_Aes(image.fileData, myKey, myIV);
                             // await MongoDBConnection.InsertData(imgId, encrypted);
                             imageData = decrypted;
                         }
-             
-                        return imageData; // Return the first result
+                    var dataToSend = new {
+                        imageData = imageData,
+                    };
+                        return Results.Ok(dataToSend); // Return the first result
                     }
                     else
                     {
-                        return imageData;
+                        return Results.NotFound();
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            return imageData;
+            Console.WriteLine(ex);
+            return Results.BadRequest();
         }
         // try
         // {

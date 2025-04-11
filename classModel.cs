@@ -19,5 +19,5 @@ public class ProductData{
     public string productName { get; set;}
     public string productDescription { get; set;}
     public int productPrice { get; set;}
-    public byte[] image { get; set;}
+    public string imgId {get; set;}
 }

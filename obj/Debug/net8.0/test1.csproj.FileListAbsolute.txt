@@ -158,8 +158,6 @@ C:\Users\Luminas\Desktop\test1\obj\Debug\net8.0\test1.genruntimeconfig.cache
 C:\Users\Luminas\Desktop\test1\obj\Debug\net8.0\ref\test1.dll
 C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\appsettings.json
-C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\test1.staticwebassets.runtime.json
-C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\test1.staticwebassets.endpoints.json
 C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\test1.exe
 C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\test1.deps.json
 C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\test1.runtimeconfig.json
@@ -232,9 +230,7 @@ C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\test1.sourcelink.jso
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\scopedcss\bundle\test1.styles.css
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets.development.json
-C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets.build.endpoints.json
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets\msbuild.test1.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets\msbuild.test1.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets\msbuild.build.test1.props
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.test1.props
 C:\Users\Luminas\Documents\GitHub\c-server\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.test1.props
