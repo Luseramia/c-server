@@ -2966,19 +2966,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Luminas\\.nuget\\packages\\": {}
+    "C:\\Users\\tarch\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj",
+      "projectUniqueName": "C:\\Users\\tarch\\OneDrive\\文档\\GitHub\\c-server\\test1.csproj",
       "projectName": "test1",
-      "projectPath": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\test1.csproj",
-      "packagesPath": "C:\\Users\\Luminas\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Luminas\\Documents\\GitHub\\c-server\\obj\\",
+      "projectPath": "C:\\Users\\tarch\\OneDrive\\文档\\GitHub\\c-server\\test1.csproj",
+      "packagesPath": "C:\\Users\\tarch\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\tarch\\OneDrive\\文档\\GitHub\\c-server\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Luminas\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\tarch\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -3047,7 +3047,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.404/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.407/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -77,7 +77,6 @@ public class ManageFile
     public static async Task<IResult> FindImageFromDataBase(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
         dynamic data = body;
-        Console.WriteLine(data.imgId);
         var imgId = data.imgId;
         byte[] imageData = [];
         byte[] myKey = Encoding.UTF8.GetBytes("my_secret_key_123gbasdfe1avdfdse");  // Key ความยาว 16, 24 หรือ 32 bytes ตามที่กำหนด

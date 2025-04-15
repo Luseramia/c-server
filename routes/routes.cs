@@ -7,7 +7,7 @@ using models.ManageFile;
 using MySql.Data.MySqlClient;
 using models.Product;
 using Microsoft.Extensions.Configuration;
-
+using Controller;
 namespace Routes;
 
 
@@ -21,7 +21,12 @@ public static class RouteConfig
         //    { "/test1", User.Login },
             // Add more routes here
         };
-        var noAuthRoute = new Dictionary<string, Func<ExpandoObject, MySqlConnection, HttpContext, Task<IResult>>>
+        // var noAuthRoutesMutiModel = new Dictionary<string, List<Func<ExpandoObject, MySqlConnection, HttpContext, Task<(IResult Result, object Data)>>>>{
+        //         {"/findProduct",[Product.FindProduct,ManageFile.FindImageFromDataBase]},
+        //          {"/getProducts",[Product.GetProduct]},
+        //          {"/insert-product",[Product.InsertProduct]},
+        // }
+     var noAuthRoute = new Dictionary<string, Func<ExpandoObject, MySqlConnection, HttpContext, Task<IResult>>>
         {
             { "/login", User.Login },
             {"/insert-product",Product.InsertProduct},
@@ -153,8 +158,73 @@ public static class RouteConfig
 
             });
         }
+        // foreach (var route in noAuthRoutesMutiModel)
+        // {
+        //     app.MapPost(route.Key, async Task<IResult> (HttpContext context) =>
+        //     {
+        //         using MySqlConnection connection = new MySqlConnection(connectionString);
+        //         try
+        //         {
+        //             connection.Open();
+        //             // // อ่านข้อมูลจาก form ทั้งหมด
+        //             // var form = await context.Request.ReadFormAsync();
+
+        //             // // สร้าง Dictionary เก็บข้อมูลที่ถูกส่งมา
+        //             // var formData = new Dictionary<string, string>();
+
+        //             // foreach (var key in form.Keys)
+        //             // {
+        //             //     formData[key] = form[key]; // เก็บ key-value แต่ละตัวลงใน Dictionary
+        //             // }
+        //             // Console.WriteLine("formData", formData);
+        //             // // คุณสามารถส่งข้อมูล formData (ซึ่งเป็น Dictionary) ไปใช้งานต่อ
+        //             // var result = route.Value(formData, connection,context); // ส่ง Dictionary ไปยังฟังก์ชัน
+
+        //             // return result; // ส่งผลลัพธ์กลับไปยัง client
+
+        //             // else
+        //             // {
+        //             // Console.WriteLine(context.Request.ContentType);
+        //             // var form = await context.Request.ReadFormAsync();
+        //             // ดึงข้อมูลไฟล์
+        //             // var file = form.Files["file"];
+        //             // if (file == null)
+        //             // {
+        //             //     return Results.BadRequest("No file uploaded.");
+        //             // }
+
+        //             // ดึง metadata จาก form (ถ้ามี)
+        //             // ExpandoObject jsonBody = new ExpandoObject();
+        //             // if (form.TryGetValue("metadata", out var metadataValue))
+        //             // {
+        //             //     jsonBody = JsonSerializer.Deserialize<ExpandoObject>(metadataValue);
+        //             // }
+        //             // Console.WriteLine($"File: {file.FileName}");
+        //             // Console.WriteLine($"Metadata: {JsonSerializer.Serialize(jsonBody)}");
+        //             using var reader = new StreamReader(context.Request.Body);
+        //             var body = await reader.ReadToEndAsync();
+        //             var jsonBody = JsonSerializer.Deserialize<ExpandoObject>(body);
+
+        //             // Directly use the connection here, while it is still open and valid
+        //             var result = ControllerConfig.Controller(jsonBody, connection, context,route.Value); // Pass the open connection
+
+        //             return  await result; // Return the result to the client
+        //             // }
+
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             // Log and return an error response if something goes wrong
+        //             Console.WriteLine($"Exception occurred: {ex.Message}");
+        //             return Results.Problem("An error occurred while processing your request.");
+        //         }
+
+        //     });
+        // }
 
 
     }
 
 }
+
+

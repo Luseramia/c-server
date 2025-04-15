@@ -17,7 +17,7 @@ public class Product
         var productName = data.productName;
         var productDescription = data.productDescription;
         var productPrice = data.productPrice;
-
+        Console.WriteLine(productDescription);
         byte[] randomBytes = new byte[25];
         RandomNumberGenerator.Fill(randomBytes);
         string productId = BitConverter.ToString(randomBytes).Replace("-", "");
@@ -145,6 +145,9 @@ public class Product
                         };
                         products.Add(product);
                     }
+                    foreach(var product in products){
+                        Console.WriteLine(product);
+                    }
                     return Results.Ok(products);
                 }
             }
@@ -154,7 +157,7 @@ public class Product
             // หากเกิดข้อผิดพลาดใน SQL
             // ลบไฟล์ออกจาก File System เพื่อป้องกันไฟล์ตกค้าง
             // _fileService.DeleteImageFromFileSystem(fileName, _uploadPath);
-            Console.WriteLine($"Error saving data to database product: {ex.Message}");
+            Console.WriteLine($"Error get data to database product: {ex.Message}");
             // context.Response.StatusCode = 500; // ส่งสถานะ 500 กลับไป
             // context.Response.WriteAsync($"Error saving data to database: {ex.Message}");
             return Results.StatusCode(500); // หยุดการทำงานของฟังก์ชัน

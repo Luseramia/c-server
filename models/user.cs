@@ -7,6 +7,7 @@ using System.Dynamic;
 using System.Text.Json;
 using JwtGen;
 using MySqlX.XDevAPI.Common;
+using static JwtGen.JwtGen;
 
 class User
 {
@@ -44,7 +45,6 @@ class User
                             name = reader.GetString("name"),
                             address = reader.GetInt64("grant")
                         };
-
                         return Results.Ok(user); // Return the first result
                     }
                     else
@@ -59,20 +59,19 @@ class User
     }
     public static async Task<IResult> CheckLogin(ExpandoObject body, MySqlConnection connection, HttpContext context)
     {
-        return Results.Ok();
-        // var token = context.Request.Cookies["jwtToken"];
-        // JwtDecoder.DecodeJwtToken(token);
-        // if (token != null)
-        // {
-        //     Console.WriteLine("1");
-        //     return Results.Ok();
-        // }
-        // else
-        // {
-        //     Console.WriteLine("2");
-        //     return Results.Unauthorized();
+        var token = context.Request.Cookies["jwtToken"];
+        JwtDecoder.DecodeJwtToken(token);
+        if (token != null)
+        {
+            Console.WriteLine("1");
+            return Results.Ok();
+        }
+        else
+        {
+            Console.WriteLine("2");
+            return Results.Unauthorized();
 
-        // }
+        }
 
     }
 
