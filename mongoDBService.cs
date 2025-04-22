@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Routes;
+// using Routes;
 
 namespace MongoDBService;
 
@@ -9,7 +9,7 @@ public class MongoDBConnection
 {
     public static async Task<bool> InsertData(string id, byte[] data)
     {
-        var client = new MongoClient("mongodb://fileManager:FROMIS_9@192.168.1.53:27017/FileStorage");
+        var client = new MongoClient("mongodb://fileManager:@192.168.1.53:27017/FileStorage");
         var database = client.GetDatabase("FileStorage");
         var collection = database.GetCollection<BsonDocument>("Images");
         try
@@ -37,7 +37,7 @@ public class MongoDBConnection
     }
     public static async Task<List<BsonDocument>>  FindData(string id )
     {
-        var client = new MongoClient("mongodb://fileManager:FROMIS_9@192.168.1.53:27017/FileStorage");
+        var client = new MongoClient("mongodb://fileManager:@192.168.1.53:27017/FileStorage");
         var database = client.GetDatabase("FileStorage");
         var collection = database.GetCollection<BsonDocument>("Images");
         try
@@ -59,7 +59,7 @@ public class MongoDBConnection
 
         public static async Task DeleteData(string id)
     {
-        var client = new MongoClient("mongodb://fileManager:FROMIS_9@192.168.1.53:27017/FileStorage");
+        var client = new MongoClient("mongodb://fileManager:@192.168.1.53:27017/FileStorage");
         var database = client.GetDatabase("FileStorage");
         var collection = database.GetCollection<BsonDocument>("Images");
         try

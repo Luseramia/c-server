@@ -1,131 +1,160 @@
-
+using Microsoft.AspNetCore.Mvc;
 using System.Dynamic;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
-using models.User;
-using models.ManageFile;
 using MySql.Data.MySqlClient;
-using models.Product;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-
-namespace Controller;
-
-public static class ControllerConfig
+using RedisServices;
+using JwtGen;
+using System.Data;
+using System.Security.Claims;
+namespace Controllers
 {
-    public static async Task<IResult> Controller(ExpandoObject jsonBody, MySqlConnection connection, HttpContext context,List<Func<ExpandoObject, MySqlConnection, HttpContext, Task<(IResult Result, object Data)>>> models)
-        {
-            try
-            {
-            // เก็บค่า jsonBody เริ่มต้น
-        var originalBody = new Dictionary<string, object>();
-        foreach (var item in jsonBody as IDictionary<string, object>)
-        {
-            originalBody[item.Key] = item.Value;
-        }
-        var results = new Dictionary<string, object>(originalBody);
-        var updatedJsonBody = new ExpandoObject() as IDictionary<string, object>;
-        foreach (var item in originalBody)
-        {
-            updatedJsonBody[item.Key] = item.Value;
-        }
-        
-        // Dictionary สำหรับเก็บผลลัพธ์รวม
-  
-        // ทำงานกับแต่ละ model
-        foreach (var model in models)
-        {
-            var (result, data) = await model(updatedJsonBody as ExpandoObject, connection, context);
-            // ตรวจสอบว่า result เป็น OK
-          int statusCode = 0;
-        var statusCodeProperty = result.GetType().GetProperty("StatusCode");
-        if (statusCodeProperty != null)
-        {
-            statusCode = (int)statusCodeProperty.GetValue(result);
-        }
-
-        // ตรวจสอบว่าเป็น status code 200 (OK) หรือไม่
-            if (statusCode == 200)
-            {
-                if (data is List<object> listData)
-                {
-                    var methodName = model.Method.Name;
-                    Console.WriteLine(methodName);
-                    results["data"] = listData;
-                    updatedJsonBody[methodName] = listData;
-                }
-                else{
-                    Console.WriteLine("test2");
-                }
-                // else if (data != null)
-                // {
-                //     // ใช้ชื่อ method เป็น key
-                //     var modelName = model.Method.Name;
-                //     results[modelName] = data;
-                // }
-            }
-            else{
-                Console.WriteLine($"Model returned non-OK result: {result.GetType().Name}");
-            }
-            Console.WriteLine(updatedJsonBody);
-        }
-       Console.WriteLine("\nResults after all models:");
-        LogDictionary(results);
-
-        // ทำ intersection กับ jsonBody ต้นฉบับ
-                var finalResult = new Dictionary<string, object>(originalBody);
-        foreach (var item in results)
-        {
-            finalResult[item.Key] = item.Value; // เพิ่มผลลัพธ์จาก model
-        }
-
-        
-        return Results.Ok(finalResult);
-                }
-            
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in combined actions: {ex.Message}");
-                return Results.StatusCode(500);
-            }
-        }
-     private static void LogDictionary(Dictionary<string, object> dict)
+[ApiController]
+[Route("[controller]")]
+public class UserController : ControllerBase
 {
-    foreach (var item in dict)
+    private readonly ITokenService _tokenService;
+    private readonly IConfiguration _configuration;
+
+    public UserController(ITokenService tokenService, IConfiguration configuration)
     {
-        Console.WriteLine($"Key: {item.Key}");
-        
-        if (item.Value is List<object> list)
+        _tokenService = tokenService;
+        _configuration = configuration;
+    }
+        public class LoginModel
         {
-            Console.WriteLine($"  Value: List with {list.Count} items");
-            if (list.Count > 0)
+            public string username { get; set; }
+            public string password { get; set; }
+        }
+    
+
+    [HttpPost("/login")]
+    public async Task<IActionResult> Login([FromBody] LoginModel dto)
+    {
+        string connectionString = _configuration.GetConnectionString("DefaultConnection");
+        using MySqlConnection connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        string sql = "SELECT * FROM user WHERE username = @username AND password = @password";
+        using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@username", dto.username);
+        command.Parameters.AddWithValue("@password", dto.password);
+
+        using var reader = await command.ExecuteReaderAsync();
+        if (reader.HasRows && await reader.ReadAsync())
+        {
+            var user = new 
             {
-                Console.WriteLine($"  First item type: {list[0].GetType().Name}");
-                
-                // ถ้าเป็น anonymous type จะมี property ให้ดู
-                var props = list[0].GetType().GetProperties();
-                if (props.Length > 0)
+                userId = reader.GetString("userId"),
+                username = reader.GetString("username"),
+                name = reader.GetString("name"),
+                role = reader.GetString("role")
+            };
+
+            var token = await JwtGen.JwtGen.GenerateJwtTokenAsync(user.userId, user.role, _tokenService);
+
+            Response.Cookies.Append("jwtToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(30)
+            });
+
+            return Ok(user);
+        }
+
+        return Unauthorized("Invalid credentials");
+    }
+        [HttpPost("/logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var token = Request.Cookies["jwtToken"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                // ตรวจสอบ token
+                var principal = JwtGen.JwtGen.JwtDecoder.ValidateToken(token);
+                if (principal != null)
                 {
-                    Console.WriteLine($"  Properties: {string.Join(", ", props.Select(p => p.Name))}");
-                    
-                    // Log ค่าของ property แรกเป็นตัวอย่าง
-                    if (props.Length > 0)
+                    var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!string.IsNullOrEmpty(userId))
                     {
-                        var firstProp = props[0];
-                        Console.WriteLine($"  Sample value for {firstProp.Name}: {firstProp.GetValue(list[0])}");
+                        // เพิกถอน token ใน Redis
+                        await JwtGen.JwtGen.RevokeTokenAsync(userId, token, _tokenService);
                     }
                 }
+                
+                // ลบ cookie
+                Response.Cookies.Delete("jwtToken", new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false, // ตั้งเป็น true ในสภาพแวดล้อม production และใช้ HTTPS
+                    SameSite = SameSiteMode.Lax
+                });
             }
+            
+            return Ok(new { message = "Logged out successfully" });
         }
-        else if (item.Value != null)
+
+        [HttpGet("/verify")]
+        public async Task<IActionResult> VerifyToken()
         {
-            Console.WriteLine($"  Value type: {item.Value.GetType().Name} - {item.Value}");
+            var token = Request.Cookies["jwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized(new { message = "No token found" });
+            }
+            
+            // ตรวจสอบ token
+            var principal = JwtGen.JwtGen.JwtDecoder.ValidateToken(token);
+            if (principal == null)
+            {
+                return Unauthorized(new { message = "Invalid token" });
+            }
+            
+            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "Invalid token claims" });
+            }
+            
+            // ตรวจสอบว่า token ยังมีอยู่ใน Redis หรือไม่
+            if (!await _tokenService.IsTokenValid(userId, token))
+            {
+                return Unauthorized(new { message = "Token has been revoked" });
+            }
+            
+            return Ok(new
+            {
+                userId = userId,
+                username = principal.FindFirstValue(ClaimTypes.Name),
+                role = principal.FindFirstValue(ClaimTypes.Role)
+            });
         }
-        else
+        [HttpPost("/logout-all")]
+        public async Task<IActionResult> LogoutAll()
         {
-            Console.WriteLine($"  Value: null");
+            var token = Request.Cookies["jwtToken"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                // ตรวจสอบ token
+                var principal = JwtGen.JwtGen.JwtDecoder.ValidateToken(token);
+                if (principal != null)
+                {
+                    var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        // เพิกถอน token ทั้งหมดของ user ใน Redis
+                        await JwtGen.JwtGen.RevokeAllTokensAsync(userId, _tokenService);
+                    }
+                }
+                
+                // ลบ cookie
+                Response.Cookies.Delete("jwtToken");
+            }
+            
+            return Ok(new { message = "Logged out from all devices successfully" });
         }
-    }
+
+
 }
-    }
+}

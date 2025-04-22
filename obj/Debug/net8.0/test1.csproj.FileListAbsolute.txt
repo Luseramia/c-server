@@ -326,3 +326,6 @@ C:\Users\tarch\OneDrive\文档\GitHub\c-server\obj\Debug\net8.0\refint\test1.dll
 C:\Users\tarch\OneDrive\文档\GitHub\c-server\obj\Debug\net8.0\test1.pdb
 C:\Users\tarch\OneDrive\文档\GitHub\c-server\obj\Debug\net8.0\test1.genruntimeconfig.cache
 C:\Users\tarch\OneDrive\文档\GitHub\c-server\obj\Debug\net8.0\ref\test1.dll
+C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\Microsoft.Bcl.Memory.dll
+C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\Pipelines.Sockets.Unofficial.dll
+C:\Users\Luminas\Documents\GitHub\c-server\bin\Debug\net8.0\StackExchange.Redis.dll
