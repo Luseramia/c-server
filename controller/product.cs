@@ -9,6 +9,7 @@ using AESEnCAndDeC;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Controllers.ManageFile;
+using Mysqlx.Crud;
 namespace Controllers
 {
     [ApiController]
@@ -36,12 +37,16 @@ namespace Controllers
 
             while (await reader.ReadAsync())
             {
+                byte[] imageBytes = new byte[reader.GetBytes("file_data", 0, null, 0, int.MaxValue)];
+                reader.GetBytes("file_data", 0, imageBytes, 0, imageBytes.Length);
+
                 dynamic product = new ExpandoObject();
                        product.productId = reader.GetString("product_id");
                             product.productName = reader.GetString("product_name");
                             product.productDescription = reader.GetString("product_description");
                             product.productPrice = reader.GetInt32("product_price");
-                            product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
+                            product.productImage = Convert.ToBase64String(imageBytes);
+                            // product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
                 // เพิ่ม property อื่นๆ ตามต้องการ
                 
                 products.Add(product);
@@ -91,12 +96,17 @@ namespace Controllers
 
             while (await reader.ReadAsync())
             {
+                byte[] imageBytes = new byte[reader.GetBytes("file_data", 0, null, 0, int.MaxValue)];
+                reader.GetBytes("file_data", 0, imageBytes, 0, imageBytes.Length);
                 dynamic product = new ExpandoObject();
                        product.productId = reader.GetString("product_id");
                             product.productName = reader.GetString("product_name");
                             product.productDescription = reader.GetString("product_description");
                             product.productPrice = reader.GetInt32("product_price");
-                            product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
+                            product.productImage = Convert.ToBase64String(imageBytes);
+                            product.tag = reader.GetString("tag");
+                            product.typeId = reader.GetString("typeId");
+                            product.imageId = reader.GetString("img_id");
                 // เพิ่ม property อื่นๆ ตามต้องการ
                 
                 products.Add(product);
@@ -106,37 +116,43 @@ namespace Controllers
         }
 
 
-        [HttpPost("insertProductType")]
-        public async Task<IActionResult> InsertProductType([FromBody] ProductType model)
+
+        
+        [HttpPost("getProductById")]
+        public async Task<IActionResult> FindProductById([FromBody] ProductId model)
         {
-            byte[] randomBytes = new byte[25];
-            RandomNumberGenerator.Fill(randomBytes);
-            string type_id = BitConverter.ToString(randomBytes).Replace("-", "");
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
             using MySqlConnection connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
-            string sql = "INSERT INTO productType (type_id,type_name) VALUES (@type_id,@type_name)";
-            using var command = new MySqlCommand(sql, connection);
-            command.Parameters.AddWithValue("@type_id", type_id);
-            command.Parameters.AddWithValue("@type_name", model.typeName);
-            using var reader = await command.ExecuteReaderAsync();
-            var products = new List<dynamic>();
 
+            string sql = "SELECT * FROM product INNER JOIN images ON product.img_id = images.img_id WHERE product_id = @productId";
+            using var command = new MySqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@productId", model.productId);
+            using var reader = await command.ExecuteReaderAsync();
+            var product = new Product();
             while (await reader.ReadAsync())
             {
-                dynamic product = new ExpandoObject();
+                byte[] imageBytes = new byte[reader.GetBytes("file_data", 0, null, 0, int.MaxValue)];
+                reader.GetBytes("file_data", 0, imageBytes, 0, imageBytes.Length);
+                dynamic _product = new ExpandoObject();
                        product.productId = reader.GetString("product_id");
                             product.productName = reader.GetString("product_name");
                             product.productDescription = reader.GetString("product_description");
                             product.productPrice = reader.GetInt32("product_price");
-                            product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
+                            product.productImage = Convert.ToBase64String(imageBytes);
+                            product.tag = reader.GetString("tag");
+                            product.typeId = reader.GetString("typeId");
+                            // product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
                 // เพิ่ม property อื่นๆ ตามต้องการ
                 
-                products.Add(product);
             }
 
-            return Ok(products);
+            return Ok(product);
         }
+
+        
+    
+
         [HttpPost]
         public async Task<IActionResult> InsertProduct([FromBody] InsertProductModel model)
         {
@@ -147,7 +163,7 @@ namespace Controllers
         DateTime currentDateTime = DateTime.Now;
         byte[] randomBytesForImgId = new byte[25];
         RandomNumberGenerator.Fill(randomBytesForImgId);
-        string imgId = BitConverter.ToString(randomBytes).Replace("-", "");
+        string imgId = BitConverter.ToString(randomBytesForImgId).Replace("-", "");
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         try
         {
@@ -169,7 +185,7 @@ namespace Controllers
                 command.ExecuteNonQuery();
             }
             var imageContent = new ImageModel{
-                imgId = imgId,
+                imageId = imgId,
                 file = model.file
             };
             try{
@@ -184,6 +200,86 @@ namespace Controllers
             return BadRequest("Failed to create product");
         }
         }
+
+        [HttpPost("updateProduct")]
+        public async Task<IActionResult> UpdateProduct([FromBody] UpdateProductModel model)
+        {
+        DateTime currentDateTime = DateTime.Now;
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        try
+        {
+            string connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using MySqlConnection connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            string sql = @"UPDATE product 
+            SET 
+                product_name = @product_name, 
+                product_description = @product_description, 
+                product_price = @product_price, 
+                img_id = @img_id, 
+                typeId = @typeId, 
+                tag = @tag, 
+                uploadedAt = @uploadedAt, 
+                userId = @userId
+            WHERE product_id = @product_id";
+            using (MySqlCommand command = new MySqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@product_id", model.productId);
+                command.Parameters.AddWithValue("@product_name", model.productName);
+                command.Parameters.AddWithValue("@product_description", model.productDescription);
+                command.Parameters.AddWithValue("@product_price", model.productPrice);
+                command.Parameters.AddWithValue("@img_id", model.imageId);
+                command.Parameters.AddWithValue("@typeId", model.typeId);
+                command.Parameters.AddWithValue("@tag", model.tag);
+                command.Parameters.AddWithValue("@uploadedAt", currentDateTime);
+                command.Parameters.AddWithValue("@userId", userId);
+                command.ExecuteNonQuery();
+            }
+            if (model.file != null && !string.IsNullOrEmpty(model.file.content))
+            {
+                var imageContent = new ImageModel
+                {
+                    imageId = model.imageId,
+                    file = model.file
+                };
+
+                await ManageFile.ManageFile.UpdateImageMetadataOnDatabase(imageContent, connection);
+            }
+
+            return Ok();
+
+        }
+        catch{
+            return BadRequest("Failed to update product");
+        }
+        }
+
+        [HttpPost("deleteProduct")]
+        public async Task<IActionResult> DeleteProduct([FromBody] UpdateProductModel model)
+        {
+        try
+        {
+            string connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using MySqlConnection connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            string sql = "DELETE FROM product WHERE product_id = @product_id";
+            using (MySqlCommand command = new MySqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@product_id", model.productId);
+                command.ExecuteNonQuery();
+            }
+                var imageContent = new ImageModel
+                {
+                    imageId = model.imageId,
+                };
+                await ManageFile.ManageFile.DeleteImageMetadataOnDatabase(imageContent, connection);
+            return Ok();
+
+        }
+        catch{
+            return BadRequest("Failed to update product");
+        }
+        }
     public static byte[] GetBlobData(MySqlDataReader reader, string columnName)
     {
         byte[] myKey = Encoding.UTF8.GetBytes("my_secret_key_123gbasdfe1avdfdse");  // Key ความยาว 16, 24 หรือ 32 bytes ตามที่กำหนด
@@ -191,31 +287,57 @@ namespace Controllers
         // ตรวจสอบขนาดข้อมูลในคอลัมน์
         long length = reader.GetBytes(reader.GetOrdinal(columnName), 0, null, 0, 0);
         byte[] buffer = new byte[length];
-        // อ่านข้อมูล binary จากคอลัมน์
-        reader.GetBytes(reader.GetOrdinal(columnName), 0, buffer, 0, (int)length);
-        using (Aes myAes = Aes.Create())
-        {
-            byte[] decrypted = AESDecryption.DecryptStringFromBytes_Aes(buffer, myKey, myIV);
-            // await MongoDBConnection.InsertData(imgId, encrypted);
-            buffer = decrypted;
-        }
+        //  using (Aes myAes = Aes.Create())
+        // {
+        //     byte[] decrypted = AESDecryption.DecryptStringFromBytes_Aes(buffer, myKey, myIV);
+        //     // await MongoDBConnection.InsertData(imgId, encrypted);
+        //     buffer = decrypted;
+        // } // อ่านข้อมูล binary จากคอลัมน์
+        // reader.GetBytes(reader.GetOrdinal(columnName), 0, buffer, 0, (int)length);
+      
         return buffer;
     }
     }
+    public class ProductId{
+        public string productId {get;set;}
+    }
 
-    public class InsertProductModel
+    public class Product{
+        public string productId{get;set;}
+        public string productName { get; set; }
+        
+        public string productDescription { get; set; }
+        public decimal productPrice { get; set; }
+        public string typeId { get; set; }
+         public string tag { get; set; }
+         public string productImage {get;set;}
+    }
+  public class InsertProductModel
     {
         public string productName { get; set; }
         
         public string productDescription { get; set; }
         public decimal productPrice { get; set; }
-        public FileData file {get;set;}
+        public FileData? file {get;set;}
         public string typeId { get; set; }
          public string tag { get; set; }
         
     }
+    public class UpdateProductModel
+    {
+        public string productId {get;set;}
+        public string productName { get; set; }
+        
+        public string productDescription { get; set; }
+        public decimal productPrice { get; set; }
+        public FileData? file {get;set;}
+        public string typeId { get; set; }
+         public string tag { get; set; }
+         
+        public string imageId {get;set;}
+    }
     public class ImageModel{
-        public string imgId { get; set; }
+        public string imageId { get; set; }
         public FileData file {get;set;}
     }
 

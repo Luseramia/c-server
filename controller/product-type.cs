@@ -6,6 +6,7 @@ using RedisServices;
 using JwtGen;
 using System.Data;
 using System.Security.Claims;
+using System.Security.Cryptography;
 namespace Controllers
 {
 [ApiController]
@@ -32,8 +33,8 @@ namespace Controllers
             while (await reader.ReadAsync())
             {
                 dynamic productType = new ExpandoObject();
-                productType.type_id = reader.GetString("type_id");
-                productType.type_name = reader.GetString("type_name");
+                productType.typeId = reader.GetString("type_id");
+                productType.typeName = reader.GetString("type_name");
                 // เพิ่ม property อื่นๆ ตามต้องการ
                 
                 productTypes.Add(productType);
@@ -41,5 +42,23 @@ namespace Controllers
 
             return Ok(productTypes);
         }
+
+        [HttpPost("insertProductType")]
+        public async Task<IActionResult> InsertProductType([FromBody] ProductType model)
+        {
+            byte[] randomBytes = new byte[25];
+            RandomNumberGenerator.Fill(randomBytes);
+            string type_id = BitConverter.ToString(randomBytes).Replace("-", "");
+            string connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using MySqlConnection connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            string sql = "INSERT INTO productType (type_id,type_name) VALUES (@type_id,@type_name)";
+            using var command = new MySqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@type_id", type_id);
+            command.Parameters.AddWithValue("@type_name", model.typeName);
+            using var reader = await command.ExecuteReaderAsync();
+            return Ok();
+        }
+
     }
 }
