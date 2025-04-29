@@ -22,21 +22,31 @@ namespace Controllers
 
         [Authorize]
         [HttpGet("getItemInCart")]
-        public async Task<IActionResult> getItemInCartByUserId([FromBody] CartItem model)
+        public async Task<IActionResult> GetItemInCartByUserId()
         {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         try
         {
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
             using MySqlConnection connection = new MySqlConnection(connectionString);
+            string sql = "SELECT productId, SUM(quantity) AS quantity FROM cart WHERE userId = @userId GROUP BY productId";
+            using var command = new MySqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@userId", userId);
             await connection.OpenAsync();
-            string sql = "SELECT productId, SUM(quantity) AS quantity FROM cart WHERE userId = @userId GROUP BY @userId";
-            using (MySqlCommand command = new MySqlCommand(sql, connection))
+            using var reader = await command.ExecuteReaderAsync();
+            var cartItems = new List<dynamic>();
+            // if (reader.HasRows && await reader.ReadAsync()){
+
+            while (await reader.ReadAsync())
             {
-                command.Parameters.AddWithValue("@userId", userId);
-                command.ExecuteNonQuery();
+                dynamic cartItem = new ExpandoObject();
+                            cartItem.productId = reader.GetString("productId");
+                            cartItem.quantity = reader.GetInt32("quantity");
+                // เพิ่ม property อื่นๆ ตามต้องการ
+                
+                cartItems.Add(cartItem);
             }
-            return Ok();
+            return Ok(cartItems);
         }
         catch (Exception ex){
             Console.WriteLine(ex.ToString());
