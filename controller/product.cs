@@ -124,30 +124,39 @@ namespace Controllers
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
             using MySqlConnection connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
-
-            string sql = "SELECT * FROM product INNER JOIN images ON product.img_id = images.img_id WHERE product_id = @productId";
+            var ids = model.productId;
+            var placeholderId = ids.Select((_, index) => $"@id{index}").ToArray();
+            // string sql = "SELECT * FROM product INNER JOIN images ON product.img_id = images.img_id WHERE product_id = @productId";
+            string sql = $@"
+                    SELECT * FROM product 
+                    INNER JOIN images ON product.img_id = images.img_id 
+                    WHERE product_id IN ({string.Join(",", placeholderId)})";
             using var command = new MySqlCommand(sql, connection);
-            command.Parameters.AddWithValue("@productId", model.productId);
+             for (int i = 0; i < ids.Count; i++)
+            {
+                command.Parameters.AddWithValue($"@id{i}", ids[i]);
+            }
+            // command.Parameters.AddWithValue("@productId", model.productId);
             using var reader = await command.ExecuteReaderAsync();
-            var product = new Product();
+            var products = new List<object>();
             while (await reader.ReadAsync())
             {
                 byte[] imageBytes = new byte[reader.GetBytes("file_data", 0, null, 0, int.MaxValue)];
                 reader.GetBytes("file_data", 0, imageBytes, 0, imageBytes.Length);
                 dynamic _product = new ExpandoObject();
-                       product.productId = reader.GetString("product_id");
-                            product.productName = reader.GetString("product_name");
-                            product.productDescription = reader.GetString("product_description");
-                            product.productPrice = reader.GetInt32("product_price");
-                            product.productImage = Convert.ToBase64String(imageBytes);
-                            product.tag = reader.GetString("tag");
-                            product.typeId = reader.GetString("typeId");
+                       _product.productId = reader.GetString("product_id");
+                            _product.productName = reader.GetString("product_name");
+                            _product.productDescription = reader.GetString("product_description");
+                            _product.productPrice = reader.GetInt32("product_price");
+                            _product.productImage = Convert.ToBase64String(imageBytes);
+                            _product.tag = reader.GetString("tag");
+                            _product.typeId = reader.GetString("typeId");
                             // product.productImage = GetBlobData((MySqlDataReader)reader, "file_data");
                 // เพิ่ม property อื่นๆ ตามต้องการ
-                
+                products.Add(_product);
             }
 
-            return Ok(product);
+            return Ok(products);
         }
 
         
@@ -299,7 +308,7 @@ namespace Controllers
     }
     }
     public class ProductId{
-        public string productId {get;set;}
+        public List<string> productId {get;set;}
     }
 
     public class Product{
