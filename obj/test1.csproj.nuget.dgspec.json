@@ -55,6 +55,10 @@
               "target": "Package",
               "version": "[8.0.2, )"
             },
+            "Minio": {
+              "target": "Package",
+              "version": "[6.0.4, )"
+            },
             "MongoDB.Driver": {
               "target": "Package",
               "version": "[3.1.0, )"

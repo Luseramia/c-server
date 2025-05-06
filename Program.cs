@@ -11,10 +11,25 @@ using MySql.Data.MySqlClient;
 using RedisServices;
 using StackExchange.Redis;
 using System.Security.Claims;
+using Minio;
+using Minio.DataModel.Args;
+using FileUploader;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+var endpoint = "192.168.1.44:9000";
+var accessKey = "tarchunk";
+var secretKey = "FROMIS_9";
+var secure = false;
+
+
+builder.Services.AddMinio(configureClient => configureClient
+    .WithEndpoint(endpoint)
+    .WithCredentials(accessKey, secretKey)
+    .WithSSL(false)
+    .Build());
 builder.Services.AddCors(options =>
 {
   options.AddPolicy(name: MyAllowSpecificOrigins,
@@ -96,6 +111,7 @@ var app = builder.Build();
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your_secret_key_which_is_16_bytes"));
 var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+
 app.Use(async (context, next) =>
 {
   var token = context.Request.Cookies["jwtToken"]; // อ่าน jwt จาก cookie
@@ -104,7 +120,6 @@ app.Use(async (context, next) =>
     // เพิ่ม Authorization Header ในคำขอ
     context.Request.Headers.Add("Authorization", $"Bearer {token}");
   }
-
 
   await next(); // เรียก middleware ถัดไป
 });

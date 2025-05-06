@@ -10,6 +10,10 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Controllers.ManageFile;
 using Mysqlx.Crud;
+using Minio;
+using Minio.DataModel.Args;
+using Minio.Exceptions;
+using Minio.DataModel;
 namespace Controllers
 {
     [ApiController]
@@ -17,12 +21,94 @@ namespace Controllers
     public class ProductController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-
-        public ProductController(IConfiguration configuration)
+        private readonly IMinioClient minioClient;
+        
+   
+        public ProductController(IConfiguration configuration,IMinioClient minioClient)
         {
             _configuration = configuration;
+            this.minioClient = minioClient;
         }
+
+        private async static Task Run(IMinioClient minio)
+        {
+            var bucketName = "shopping";
+            var objectName = "tttt.jpg";
+            // var filePath = "./tttt.jpg";
+            var contentType = "image/jpeg";
+            var filePath = Path.GetFullPath("./tttt.jpg");
+         
+
+            try 
+            {
+                // Make a bucket on the server, if not already present.
+                var beArgs = new BucketExistsArgs()
+                    .WithBucket(bucketName);
+                bool found = await minio.BucketExistsAsync(beArgs).ConfigureAwait(false);
+                if (!found)
+                {
+                    var mbArgs = new MakeBucketArgs()
+                        .WithBucket(bucketName);
+                    await minio.MakeBucketAsync(mbArgs).ConfigureAwait(false);
+                }
+                    var progress = new Progress<ProgressReport>(progressReport =>
+    {
+        // Progress events are delivered asynchronously (see remark below)
+        Console.WriteLine(
+                $"Percentage: {progressReport.Percentage}% TotalBytesTransferred: {progressReport.TotalBytesTransferred} bytes");
+        if (progressReport.Percentage != 100)
+            Console.SetCursorPosition(0, Console.CursorTop - 1);
+        else Console.WriteLine();
+    });
+
+                // Upload a file to bucket.
+                var putObjectArgs = new PutObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(objectName)
+                    .WithFileName(filePath)
+                    .WithContentType(contentType)
+                    .WithProgress(progress);
+                await minio.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
+                var fileInfo = new FileInfo(filePath);
+                
+                Console.WriteLine($"📦 Uploading {fileInfo.Name}, size: {fileInfo.Length} bytes");
+                Console.WriteLine("Successfully uploaded " + objectName );
+                Console.WriteLine($"📦 Uploading {objectName} to bucket {bucketName}");
+            }   
+            catch (MinioException e)
+            {
+                Console.WriteLine("File Upload Error: {0}", e.Message);
+            }
+        }
+
+        
+
         [HttpGet]
+        public async Task<IActionResult> GetUrl()
+            {
+            var endpoint  = "192.168.1.44:9000";
+            var accessKey = "tarchunk";
+            var secretKey = "FROMIS_9";
+            try
+            {
+                var minio = new MinioClient()
+                                    .WithEndpoint(endpoint)
+                                    .WithCredentials(accessKey, secretKey)
+                                    .WithSSL(false)
+                                    .Build();
+                await Run(minio);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            Console.ReadLine();
+                return Ok();
+                // return Ok(await minioClient.PresignedGetObjectAsync(new PresignedGetObjectArgs()
+                //         .WithBucket(bucketID))
+                //     .ConfigureAwait(false));
+            }
+
         public async Task<IActionResult> GetAllProducts()
         {
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
