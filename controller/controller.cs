@@ -6,6 +6,7 @@ using RedisServices;
 using JwtGen;
 using System.Data;
 using System.Security.Claims;
+using Minio;
 namespace Controllers
 {
 [ApiController]
